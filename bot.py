@@ -1,49 +1,42 @@
-import logging
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import Application, CommandHandler, CallbackQueryHandler
-from telegram.ext import CallbackContext
+from telegram.ext import Application, CommandHandler, CallbackQueryHandler, CallbackContext
 
-logging.basicConfig(format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-                    level=logging.INFO)
-logger = logging.getLogger(__name__)
+# Ваш токен (замените на свой)
+TOKEN = '7690422797:AAFFbf6QYQRijNhbQ01eDTEj6AxbundDLAY'
 
-# Список для хранения пользователей, которые нажали кнопку
-users = []
-
-# Функция для обработки нажатия кнопки
-async def button_press(update: Update, context: CallbackContext) -> None:
-    user = update.effective_user
-    if user not in users:
-        users.append(user)
-        await update.message.reply_text(f"{user.first_name} нажал первым!")
-
-# Функция для старта бота
+# Функция обработки команды /start
 async def start(update: Update, context: CallbackContext) -> None:
-    await update.message.reply_text(
-        "Привет! Нажми кнопку, чтобы узнать, кто первый!"
-    )
-
-    # Создаем кнопку
+    # Создание кнопки
     keyboard = [
-        [InlineKeyboardButton("Нажми меня!", callback_data="press")]
+        [InlineKeyboardButton("Нажми меня!", callback_data='button_pressed')]
     ]
+    
+    # Создание разметки для кнопки
     reply_markup = InlineKeyboardMarkup(keyboard)
     
-    await update.message.reply_text(
-        "Нажми кнопку!", reply_markup=reply_markup
-    )
+    # Отправка сообщения с кнопкой
+    await update.message.reply_text('Привет! Нажми на кнопку ниже:', reply_markup=reply_markup)
 
+# Функция для обработки нажатия на кнопку
+async def button(update: Update, context: CallbackContext) -> None:
+    query = update.callback_query
+    # Ответ на нажатие кнопки
+    await query.answer()
+    # Ответ с текстом о том, кто нажал на кнопку
+    await query.edit_message_text(text=f"Кнопку нажал: {query.from_user.full_name}")
+
+# Основная функция
 def main() -> None:
-    """Запуск бота."""
-    application = Application.builder().token("YOUR_BOT_TOKEN").build()
+    # Инициализация приложения с токеном
+    application = Application.builder().token(TOKEN).build()
 
-    # Обработчик команд
+    # Добавляем обработчики
     application.add_handler(CommandHandler("start", start))
+    application.add_handler(CallbackQueryHandler(button))
 
-    # Обработчик кнопок
-    application.add_handler(CallbackQueryHandler(button_press, pattern="press"))
-
+    # Запуск бота
     application.run_polling()
 
-if __name__ == "__main__":
+# Запуск бота, если это основной скрипт
+if __name__ == '__main__':
     main()
