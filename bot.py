@@ -2,7 +2,7 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
 from flask import Flask, request
 import asyncio
-from threading import Lock
+from threading import Lock, Thread
 import logging
 import os
 
@@ -63,15 +63,21 @@ def healthz():
     logger.info("Health check requested")
     return 'OK', 200
 
-# Обработка вебхуков через Flask (синхронная версия)
+# Обработка вебхуков через Flask
 @app.route('/webhook', methods=['POST'])
 def webhook():
     logger.info("Webhook received")
     update = Update.de_json(request.get_json(), application.bot)
-    asyncio.run_coroutine_threadsafe(application.process_update(update), asyncio.get_event_loop())
+    application.process_update(update)  # Обрабатываем обновление синхронно
     return 'OK', 200
 
-# Основная функция
+# Функция для запуска бота в отдельном потоке
+def run_bot():
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    loop.run_until_complete(main())
+
+# Основная функция для бота
 async def main():
     # Регистрация хендлеров
     application.add_handler(CommandHandler("start", start))
@@ -85,10 +91,12 @@ async def main():
     except Exception as e:
         logger.error(f"Failed to set webhook: {e}")
 
-    # Запуск Flask приложения с динамическим портом
+if __name__ == '__main__':
+    # Запускаем бота в отдельном потоке
+    bot_thread = Thread(target=run_bot)
+    bot_thread.start()
+
+    # Запускаем Flask сервер
     port = int(os.environ.get("PORT", 8443))  # Render предоставляет PORT, иначе 8443
     logger.info(f"Starting Flask server on port {port}...")
     app.run(host='0.0.0.0', port=port)
-
-if __name__ == '__main__':
-    asyncio.run(main())
