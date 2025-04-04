@@ -1,8 +1,12 @@
+import random
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, CallbackContext
 
 # Ваш токен (замените на свой)
 TOKEN = '7690422797:AAFFbf6QYQRijNhbQ01eDTEj6AxbundDLAY'
+
+# Список пользователей, которые нажали кнопку
+participants = []
 
 # Функция обработки команды /start
 async def start(update: Update, context: CallbackContext) -> None:
@@ -20,10 +24,22 @@ async def start(update: Update, context: CallbackContext) -> None:
 # Функция для обработки нажатия на кнопку
 async def button(update: Update, context: CallbackContext) -> None:
     query = update.callback_query
+    user = query.from_user.full_name
+    
+    # Добавление пользователя в список участников, если его нет
+    if user not in participants:
+        participants.append(user)
+    
     # Ответ на нажатие кнопки
     await query.answer()
-    # Ответ с текстом о том, кто нажал на кнопку
-    await query.edit_message_text(text=f"Кнопку нажал: {query.from_user.full_name}")
+
+    # Если нажали оба участника, то выбираем победителя
+    if len(participants) >= 2:
+        winner = random.choice(participants)
+        await query.edit_message_text(text=f"Победитель: {winner}")
+        participants.clear()  # Очищаем список участников для следующего раунда
+    else:
+        await query.edit_message_text(text=f"Вы нажали кнопку! Участвуют: {len(participants)}/2")
 
 # Основная функция
 def main() -> None:
