@@ -1,8 +1,8 @@
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
-from flask import Flask, request
+from quart import Quart, request
 import asyncio
-from threading import Lock, Thread
+from threading import Lock
 import logging
 import os
 
@@ -17,8 +17,8 @@ TOKEN = '7690422797:AAFFbf6QYQRijNhbQ01eDTEj6AxbundDLAY'
 first_user = None
 lock = Lock()
 
-# Создаём Flask приложение
-app = Flask(__name__)
+# Создаём Quart приложение (асинхронная альтернатива Flask)
+app = Quart(__name__)
 
 # Создаём объект Application для бота
 application = Application.builder().token(TOKEN).build()
@@ -59,25 +59,20 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 # Health Check эндпоинт для render.com
 @app.route('/healthz', methods=['GET'])
-def healthz():
+async def healthz():
     logger.info("Health check requested")
     return 'OK', 200
 
-# Обработка вебхуков через Flask
+# Обработка вебхуков через Quart
 @app.route('/webhook', methods=['POST'])
-def webhook():
+async def webhook():
     logger.info("Webhook received")
-    update = Update.de_json(request.get_json(), application.bot)
-    application.process_update(update)  # Обрабатываем обновление синхронно
+    data = await request.get_json()
+    update = Update.de_json(data, application.bot)
+    await application.process_update(update)  # Теперь с await
     return 'OK', 200
 
-# Функция для запуска бота в отдельном потоке
-def run_bot():
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    loop.run_until_complete(main())
-
-# Основная функция для бота
+# Основная функция
 async def main():
     # Регистрация хендлеров
     application.add_handler(CommandHandler("start", start))
@@ -91,12 +86,10 @@ async def main():
     except Exception as e:
         logger.error(f"Failed to set webhook: {e}")
 
-if __name__ == '__main__':
-    # Запускаем бота в отдельном потоке
-    bot_thread = Thread(target=run_bot)
-    bot_thread.start()
-
-    # Запускаем Flask сервер
+    # Запуск Quart сервера
     port = int(os.environ.get("PORT", 8443))  # Render предоставляет PORT, иначе 8443
-    logger.info(f"Starting Flask server on port {port}...")
-    app.run(host='0.0.0.0', port=port)
+    logger.info(f"Starting Quart server on port {port}...")
+    await app.run_task(host='0.0.0.0', port=port)
+
+if __name__ == '__main__':
+    asyncio.run(main())
