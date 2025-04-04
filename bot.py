@@ -1,33 +1,25 @@
-import os
-from flask import Flask, request
-from telegram import Bot, Update
-from telegram.ext import Dispatcher, CommandHandler, CallbackQueryHandler
+from telegram import Update
+from telegram.ext import Application, CommandHandler, CallbackQueryHandler, CallbackContext
 
-app = Flask(__name__)
+# Ваш токен
+TOKEN = '7690422797:AAFFbf6QYQRijNhbQ01eDTEj6AxbundDLAY'
 
-TOKEN = "7690422797:AAFFbf6QYQRijNhbQ01eDTEj6AxbundDLAY"  # Это твой токен
-WEBHOOK_URL = "https://mytgbot-tzu6.onrender.com"  # Это твой URL на Render, который ты мне прислал
+# Создание приложения (это заменяет создание Dispatcher)
+app = Application.builder().token(TOKEN).build()
 
-bot = Bot(TOKEN)
+# Пример обработчика команды /start
+async def start(update: Update, context: CallbackContext):
+    await update.message.reply_text('Привет!')
 
-def start(update: Update, context):
-    update.message.reply_text("Привет! Нажми кнопку, чтобы сыграть.")
-
-def button(update: Update, context):
+# Пример обработчика кнопки (CallbackQuery)
+async def button(update: Update, context: CallbackContext):
     query = update.callback_query
-    query.answer()
-    query.edit_message_text(text=f"Победитель: {query.from_user.full_name}")
+    await query.answer()
+    await query.edit_message_text(text=f"Вы нажали: {query.data}")
 
-dispatcher = Dispatcher(bot, update_queue=None)
-dispatcher.add_handler(CommandHandler("start", start))
-dispatcher.add_handler(CallbackQueryHandler(button))
+# Регистрируем обработчики
+app.add_handler(CommandHandler("start", start))
+app.add_handler(CallbackQueryHandler(button))
 
-@app.route("/webhook", methods=["POST"])
-def webhook():
-    update = Update.de_json(request.get_json(force=True), bot)
-    dispatcher.process_update(update)
-    return "ok"
-
-if __name__ == "__main__":
-    bot.set_webhook(url=WEBHOOK_URL + "/webhook")
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
+# Запуск бота
+app.run_polling()
