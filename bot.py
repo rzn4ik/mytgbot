@@ -3,6 +3,12 @@ from telegram.ext import Application, CommandHandler, CallbackQueryHandler, Cont
 from flask import Flask, request
 import asyncio
 from threading import Lock
+import logging
+import os
+
+# Настройка логирования
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
 # Твой токен
 TOKEN = '7690422797:AAFFbf6QYQRijNhbQ01eDTEj6AxbundDLAY'
@@ -11,7 +17,7 @@ TOKEN = '7690422797:AAFFbf6QYQRijNhbQ01eDTEj6AxbundDLAY'
 first_user = None
 lock = Lock()
 
-# Создаём Flask приложение для вебхуков и health check
+# Создаём Flask приложение
 app = Flask(__name__)
 
 # Создаём объект Application для бота
@@ -37,6 +43,7 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             await query.edit_message_text(
                 text=f'Победитель: {first_user}! Новый раунд начинается...'
             )
+            logger.info(f"Winner: {first_user}")
             await asyncio.sleep(1)  # Задержка для читаемости
             keyboard = [
                 [InlineKeyboardButton("Нажми на меня", callback_data='button_press')]
@@ -44,6 +51,7 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             reply_markup = InlineKeyboardMarkup(keyboard)
             await query.message.reply_text('Нажми снова:', reply_markup=reply_markup)
             first_user = None  # Сбрасываем для нового раунда
+            logger.info("New round started, first_user reset")
         else:
             await query.edit_message_text(
                 text=f'Победитель уже есть: {first_user}. Жди новый раунд!'
@@ -52,11 +60,13 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 # Health Check эндпоинт для render.com
 @app.route('/healthz', methods=['GET'])
 def healthz():
+    logger.info("Health check requested")
     return 'OK', 200
 
 # Обработка вебхуков через Flask
 @app.route('/webhook', methods=['POST'])
 async def webhook():
+    logger.info("Webhook received")
     update = Update.de_json(request.get_json(), application.bot)
     await application.process_update(update)
     return 'OK', 200
@@ -67,12 +77,18 @@ async def main():
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CallbackQueryHandler(button))
 
-    # Установка вебхука с твоим URL от render.com
+    # Установка вебхука
     webhook_url = 'https://mytgbot-tzu6.onrender.com/webhook'
-    await application.bot.set_webhook(url=webhook_url)
+    try:
+        await application.bot.set_webhook(url=webhook_url)
+        logger.info(f"Webhook set successfully to {webhook_url}")
+    except Exception as e:
+        logger.error(f"Failed to set webhook: {e}")
 
-    # Запуск Flask приложения
-    app.run(host='0.0.0.0', port=8443)
+    # Запуск Flask приложения с динамическим портом
+    port = int(os.environ.get("PORT", 8443))  # Render предоставляет PORT, иначе 8443
+    logger.info(f"Starting Flask server on port {port}...")
+    app.run(host='0.0.0.0', port=port)
 
 if __name__ == '__main__':
     asyncio.run(main())
