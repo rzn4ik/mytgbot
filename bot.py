@@ -1,28 +1,40 @@
-import logging
-from telegram import Update
-from telegram.ext import Application, CommandHandler, CallbackContext
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import Application, CommandHandler, CallbackQueryHandler
+import time
 
-# Включаем логирование
-logging.basicConfig(format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-                    level=logging.INFO)
-logger = logging.getLogger(__name__)
+# Список, чтобы отслеживать, кто нажал первым
+press_time = None
+first_press_user = None
 
-# Токен бота
-TOKEN = "7690422797:AAFFbf6QYQRijNhbQ01eDTEj6AxbundDLAY"
+async def start(update: Update, context):
+    # Создаем кнопку
+    keyboard = [
+        [InlineKeyboardButton("Нажми меня", callback_data="press_button")]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
 
-# Команда /start
-async def start(update: Update, context: CallbackContext):
-    await update.message.reply_text("Привет! Я твой бот.")
+    # Отправляем сообщение с кнопкой
+    await update.message.reply_text("Нажми на кнопку, чтобы поиграть!", reply_markup=reply_markup)
 
-# Основная функция для запуска бота
-def main():
-    application = Application.builder().token(TOKEN).build()
+async def button_press(update: Update, context):
+    global press_time, first_press_user
 
-    # Добавляем обработчик команды /start
+    # Проверяем, был ли уже нажат кто-то
+    if press_time is None:
+        press_time = time.time()
+        first_press_user = update.callback_query.from_user.username
+        await update.callback_query.answer("Ты нажал первым!")
+    else:
+        # Проверяем, если кто-то уже был первым, отправляем сообщение
+        if first_press_user == update.callback_query.from_user.username:
+            await update.callback_query.answer("Ты уже был первым!")
+        else:
+            await update.callback_query.answer(f"Ты нажал кнопку, но первым был {first_press_user}.")
+
+async def main():
+    # Создаем экземпляр бота с вашим токеном
+    application = Application.builder().token("7690422797:AAFFbf6QYQRijNhbQ01eDTEj6AxbundDLAY").build()
+
+    # Обработчики команд
     application.add_handler(CommandHandler("start", start))
-
-    # Запускаем бота
-    application.run_polling()
-
-if __name__ == "__main__":
-    main()
+    application.add_handler(CallbackQueryHandler(button_press, pattern="press
