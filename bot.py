@@ -11,7 +11,7 @@ TOKEN = '7690422797:AAFFbf6QYQRijNhbQ01eDTEj6AxbundDLAY'
 first_user = None
 lock = Lock()
 
-# Создаём Flask приложение для вебхуков
+# Создаём Flask приложение для вебхуков и health check
 app = Flask(__name__)
 
 # Создаём объект Application для бота
@@ -49,6 +49,11 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                 text=f'Победитель уже есть: {first_user}. Жди новый раунд!'
             )
 
+# Health Check эндпоинт для render.com
+@app.route('/healthz', methods=['GET'])
+def healthz():
+    return 'OK', 200
+
 # Обработка вебхуков через Flask
 @app.route('/webhook', methods=['POST'])
 async def webhook():
@@ -62,8 +67,8 @@ async def main():
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CallbackQueryHandler(button))
 
-    # Установка вебхука (будет выполнена при запуске на render.com)
-    webhook_url = 'https://mytgbot.onrender.com/webhook'  # Замени на свой URL после деплоя
+    # Установка вебхука с твоим URL от render.com
+    webhook_url = 'https://mytgbot-tzu6.onrender.com/webhook'
     await application.bot.set_webhook(url=webhook_url)
 
     # Запуск Flask приложения
