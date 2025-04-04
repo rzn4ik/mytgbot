@@ -15,15 +15,14 @@ async def start(update: Update, context: CallbackContext):
     await update.message.reply_text("Привет! Я твой бот.")
 
 # Основная функция для запуска бота
-async def main():
+def main():
     application = Application.builder().token(TOKEN).build()
 
     # Добавляем обработчик команды /start
     application.add_handler(CommandHandler("start", start))
 
     # Запускаем бота
-    await application.run_polling()
+    application.run_polling()
 
 if __name__ == "__main__":
-    import asyncio
-    asyncio.run(main())
+    main()
