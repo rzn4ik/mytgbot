@@ -1,57 +1,50 @@
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import Application, CommandHandler, CallbackQueryHandler, CallbackContext
-import time
+import logging
+from telegram import Bot
+from telegram.ext import Updater, CommandHandler
+from telegram.ext import Dispatcher
+from telegram.ext import CallbackContext
+from telegram.ext import Update
+from telegram.ext import CallbackQueryHandler
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+import os
 
-# Ваш токен
-TOKEN = '7690422797:AAFFbf6QYQRijNhbQ01eDTEj6AxbundDLAY'
+# Вставьте сюда свой токен
+TOKEN = "7690422797:AAFFbf6QYQRijNhbQ01eDTEj6AxbundDLAY"
+WEBHOOK_URL = "https://mytgbot-tzu6.onrender.com"  # Ваш URL на Render
 
-# Словарь для хранения времени нажатия кнопки и пользователей
-press_times = {}
+logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-# Функция стартового сообщения
-async def start(update: Update, context: CallbackContext):
-    keyboard = [
-        [InlineKeyboardButton("Нажми меня!", callback_data='button_pressed')]
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    await update.message.reply_text('Нажми кнопку, чтобы принять участие!', reply_markup=reply_markup)
+def start(update: Update, context: CallbackContext) -> None:
+    update.message.reply_text("Привет! Нажми кнопку, чтобы сыграть.")
 
-# Функция обработки нажатия кнопки
-async def button(update: Update, context: CallbackContext):
-    user = update.callback_query.from_user
-    press_time = time.time()  # Время нажатия кнопки
-    press_times[user.id] = press_time  # Сохраняем время нажатия кнопки для пользователя
-    await update.callback_query.answer(f"{user.first_name} нажал на кнопку!")
+def button(update: Update, context: CallbackContext) -> None:
+    query = update.callback_query
+    query.answer()
+    query.edit_message_text(text=f"Победитель: {query.from_user.full_name}")
 
-# Функция выбора победителя
-async def winner(update: Update, context: CallbackContext):
-    if press_times:
-        # Ищем пользователя с минимальным временем нажатия
-        winner_id = min(press_times, key=press_times.get)
-        winner = await context.bot.get_chat_member(update.message.chat.id, winner_id).user
-        await update.message.reply_text(f"Победитель: {winner.first_name}!")
-        # Сбрасываем данные после завершения раунда
-        press_times.clear()
-    else:
-        await update.message.reply_text("Пока никто не нажал кнопку. Начните новый раунд!")
+def main() -> None:
+    """Запуск бота с настройкой вебхуков."""
+    bot = Bot(TOKEN)
+    
+    # Устанавливаем вебхук
+    bot.set_webhook(url=WEBHOOK_URL)
 
-# Функция перезапуска раунда
-async def restart(update: Update, context: CallbackContext):
-    press_times.clear()
-    await start(update, context)
+    # Создаем обновления
+    updater = Updater(TOKEN)
+    
+    # Получаем диспетчер
+    dispatcher = updater.dispatcher
 
-# Основная функция для запуска бота
-def main():
-    application = Application.builder().token(TOKEN).build()
+    # Команда start
+    dispatcher.add_handler(CommandHandler("start", start))
 
-    # Регистрируем обработчики команд
-    application.add_handler(CommandHandler("start", start))
-    application.add_handler(CommandHandler("winner", winner))
-    application.add_handler(CommandHandler("restart", restart))
-    application.add_handler(CallbackQueryHandler(button))
+    # Кнопка
+    button_handler = CallbackQueryHandler(button)
+    dispatcher.add_handler(button_handler)
 
-    # Запускаем бота
-    application.run_polling()
+    # Начинаем слушать обновления
+    updater.start_polling()
 
 if __name__ == '__main__':
     main()
