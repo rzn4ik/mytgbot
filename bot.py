@@ -63,12 +63,12 @@ def healthz():
     logger.info("Health check requested")
     return 'OK', 200
 
-# Обработка вебхуков через Flask
+# Обработка вебхуков через Flask (синхронная версия)
 @app.route('/webhook', methods=['POST'])
-async def webhook():
+def webhook():
     logger.info("Webhook received")
     update = Update.de_json(request.get_json(), application.bot)
-    await application.process_update(update)
+    asyncio.run_coroutine_threadsafe(application.process_update(update), asyncio.get_event_loop())
     return 'OK', 200
 
 # Основная функция
