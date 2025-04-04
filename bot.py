@@ -15,6 +15,7 @@ async def start(update: Update, context: CallbackContext):
     keyboard = [[InlineKeyboardButton("Нажми меня!", callback_data='press')]]
     reply_markup = InlineKeyboardMarkup(keyboard)
     
+    # Отправляем сообщение с кнопкой
     await update.message.reply_text("Привет! Нажми на кнопку.", reply_markup=reply_markup)
 
 # Обработчик нажатия кнопки
