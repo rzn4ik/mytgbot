@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for
 import time
 from threading import Lock
+import os  # Добавили импорт os
 
 app = Flask(__name__)
 
