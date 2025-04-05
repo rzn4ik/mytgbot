@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Нажми первым!</title>
+    <style>
+        body { text-align: center; font-family: Arial, sans-serif; margin-top: 50px; }
+        button { padding: 20px; font-size: 18px; }
+    </style>
+</head>
+<body>
+    <h1>Нажми первым!</h1>
+    {% if winner %}
+        <p>Победитель: {{ winner }}! Новый раунд начался...</p>
+    {% else %}
+        <form method="POST" action="/press">
+            <input type="text" name="name" placeholder="Твоё имя" required>
+            <button type="submit">Нажми меня</button>
+        </form>
+    {% endif %}
+</body>
+</html>
