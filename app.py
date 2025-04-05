@@ -27,7 +27,7 @@ def press():
         if winner is None:
             # Первый, кто нажал, становится победителем
             winner = f"{name} (в {current_time})"
-            winners_history.append(winner)  # Добавляем в историю
+            winners_history.insert(0, winner)  # Добавляем в начало списка
             time.sleep(2)  # Задержка 2 секунды
             winner = None  # Сбрасываем для нового раунда
     return redirect(url_for('index'))
