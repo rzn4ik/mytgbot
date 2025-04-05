@@ -1,31 +1,34 @@
 from flask import Flask, render_template, request, redirect, url_for
 import time
 from threading import Lock
-import os  # Добавили импорт os
+import os
+from datetime import datetime
 
 app = Flask(__name__)
 
-# Глобальная переменная для хранения победителя и блокировка
+# Глобальные переменные
 winner = None
 lock = Lock()
+winners_history = []  # Список для хранения истории победителей
 
 @app.route('/')
 def index():
     global winner
     with lock:
-        if winner is None:
-            return render_template('index.html', winner=None)
-        else:
-            return render_template('index.html', winner=winner)
+        return render_template('index.html', winner=winner, history=winners_history)
 
 @app.route('/press', methods=['POST'])
 def press():
-    global winner
+    global winner, winners_history
+    name = request.form.get('name', 'Аноним')
+    current_time = datetime.now().strftime('%H:%M:%S')  # Время нажатия
+
     with lock:
         if winner is None:
             # Первый, кто нажал, становится победителем
-            winner = request.form.get('name', 'Аноним')
-            time.sleep(2)  # Задержка 2 секунды перед сбросом
+            winner = f"{name} (в {current_time})"
+            winners_history.append(winner)  # Добавляем в историю
+            time.sleep(2)  # Задержка 2 секунды
             winner = None  # Сбрасываем для нового раунда
     return redirect(url_for('index'))
 

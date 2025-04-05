@@ -6,17 +6,32 @@
     <style>
         body { text-align: center; font-family: Arial, sans-serif; margin-top: 50px; }
         button { padding: 20px; font-size: 18px; }
+        .history { margin-top: 50px; text-align: left; display: inline-block; }
     </style>
 </head>
 <body>
     <h1>Нажми первым!</h1>
     {% if winner %}
-        <p>Победитель: {{ winner }}! Новый раунд начался...</p>
+        <p>Текущий победитель: {{ winner }}</p>
+        <p>Жди новый раунд...</p>
     {% else %}
         <form method="POST" action="/press">
             <input type="text" name="name" placeholder="Твоё имя" required>
             <button type="submit">Нажми меня</button>
         </form>
     {% endif %}
+
+    <div class="history">
+        <h2>История победителей:</h2>
+        {% if history %}
+            <ul>
+                {% for past_winner in history %}
+                    <li>{{ past_winner }}</li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p>Пока нет победителей.</p>
+        {% endif %}
+    </div>
 </body>
 </html>
