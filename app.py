@@ -9,25 +9,44 @@ app = Flask(__name__)
 # Глобальные переменные
 winner = None
 lock = Lock()
-winners_history = []  # Список для хранения истории победителей
+winners_history = []  # Список для хранения победителей с временем в секундах
 
 @app.route('/')
 def index():
     global winner
     with lock:
-        return render_template('index.html', winner=winner, history=winners_history)
+        # Группируем победителей по раундам
+        rounds = []
+        current_round = []
+        for entry in winners_history:
+            if not current_round:
+                current_round.append(entry)
+            else:
+                # Сравниваем время с последним победителем
+                last_time = current_round[-1]['timestamp']
+                current_time = entry['timestamp']
+                if current_time - last_time > 30:  # Новый раунд, если больше 30 секунд
+                    rounds.append(current_round)
+                    current_round = [entry]
+                else:
+                    current_round.append(entry)
+        if current_round:
+            rounds.append(current_round)
+
+        return render_template('index.html', winner=winner, rounds=rounds)
 
 @app.route('/press', methods=['POST'])
 def press():
     global winner, winners_history
     name = request.form.get('name', 'Аноним')
-    current_time = datetime.now().strftime('%H:%M:%S')  # Время нажатия
+    current_time_str = datetime.now().strftime('%H:%M:%S')  # Время в формате ЧЧ:ММ:СС
+    current_time_sec = time.time()  # Время в секундах для сравнения
 
     with lock:
         if winner is None:
             # Первый, кто нажал, становится победителем
-            winner = f"{name} (в {current_time})"
-            winners_history.insert(0, winner)  # Добавляем в начало списка
+            winner = f"{name} (в {current_time_str})"
+            winners_history.insert(0, {'name': winner, 'timestamp': current_time_sec})
             time.sleep(2)  # Задержка 2 секунды
             winner = None  # Сбрасываем для нового раунда
     return redirect(url_for('index'))

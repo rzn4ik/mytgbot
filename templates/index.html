@@ -7,6 +7,7 @@
         body { text-align: center; font-family: Arial, sans-serif; margin-top: 50px; }
         button { padding: 20px; font-size: 18px; }
         .history { margin-top: 50px; text-align: left; display: inline-block; }
+        .round { margin-bottom: 20px; }
     </style>
 </head>
 <body>
@@ -22,15 +23,20 @@
     {% endif %}
 
     <div class="history">
-        <h2>История победителей:</h2>
-        {% if history %}
-            <ul>
-                {% for past_winner in history %}
-                    <li>{{ past_winner }}</li>
-                {% endfor %}
-            </ul>
+        <h2>История раундов:</h2>
+        {% if rounds %}
+            {% for round in rounds %}
+                <div class="round">
+                    <h3>Раунд (начало в {{ round[0].name.split('в ')[1].split(')')[0] }}):</h3>
+                    <ul>
+                        {% for entry in round %}
+                            <li>{{ entry.name }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% endfor %}
         {% else %}
-            <p>Пока нет победителей.</p>
+            <p>Пока нет раундов.</p>
         {% endif %}
     </div>
 </body>
